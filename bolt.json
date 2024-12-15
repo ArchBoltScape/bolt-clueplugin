@@ -1,0 +1,5 @@
+{
+  "main": "main.lua",
+  "name": "test-plugin",
+  "description": "Basic test stuff"
+}
