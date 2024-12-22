@@ -42,13 +42,14 @@ return {get = function(bolt)
     return x == 220 and y == 36 and z == 128
   end
 
+  -- vertex count of 3D models for pulse, blue one-ring, orange two-ring and red three-ring, in that order
   local vertexcases3d = {
     [576] = 1,
     [864] = 2,
     [1728] = 3,
   }
 
-  return {create = function (bolt, location)
+  local function create (bolt, location)
     pointlist, scanrange = points.get(location)
     surfacenope:setalpha(0.75)
     return {
@@ -180,5 +181,124 @@ return {get = function(bolt)
         return this.modelfound
       end
     }
-  end}
+  end
+
+  -- table of a row of pixel data from the sixth letter of the scan clue text. each value is a function which,
+  -- when called with f(bolt, render2devent), returns a scan object or nil.
+  -- the purpose of this is to optimise text-matching, so that, instead of a large number of if-else cases,
+  -- most of the variance is handled by a lookup table, which is O(1). generally, each function queries just enough
+  -- information to uniquely identify the scan location, rather than trying to parse the whole string.
+  -- the reason it operates on the sixth letter is because it's the most varied between different texts
+  -- (16 different cases out of 24 possible texts.)
+  local locationsixthlettercases = {
+    ["\xff\xff\xff\x22\xff\xff\xff\x22\xff\xff\xff\xdd\xff\xff\xff\xdd\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x88\xff\xff\xff\x88\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00"] = function (bolt, event)
+      -- 'a' => 'Brimh[a]ven Dungeon' OR 'The He[a]rt of Gielinor' OR 'Isafd[a]r' OR 'The cr[a]ter in the Wilderness'
+      -- check the width of the fourth character: m=20 H=16 f=8 c=14
+      local _, _, w, _, _, _ = event:vertexatlasdetails((event:verticesperimage() * 6) + 1)
+      if w == 8 then return create(bolt, "isafdar") end
+      if w == 14 then return create(bolt, "wildernesscrater") end
+      if w == 16 then return create(bolt, "heartofgielinor") end
+      if w == 20 then return create(bolt, "brimhavendungeon") end
+      return nil
+    end,
+    ["\x00\x00\x01\x00\x00\x00\x01\x00\xff\xff\xff\x66\xff\xff\xff\x66\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xdd\xff\xff\xff\xdd\xff\xff\xff\x22\xff\xff\xff\x22\x00\x00\x01\x00\x00\x00\x01\x00"] = function (bolt, event)
+      -- 'c' => 'Varro[c]k and the Grand Exchange'
+      return create(bolt, "varrock")
+    end,
+    ["\x00\x00\x01\x00\x00\x00\x01\x00\xff\xff\xff\x88\xff\xff\xff\x88\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xcc\xff\xff\xff\xcc\xff\xff\xff\xdd\xff\xff\xff\xdd\x00\x00\x01\x00\x00\x00\x01\x00"] = function (bolt, event)
+      -- 'd' => 'Prifd[d]inas'
+      return create(bolt, "prifddinas")
+    end,
+    ["\x00\x00\x01\x00\x00\x00\x01\x00\xff\xff\xff\x77\xff\xff\xff\x77\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xbb\xff\xff\xff\xbb\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00"] = function (bolt, event)
+      -- 'e' => 'Darkm[e]yer' OR 'The de[e]pest levels of the Wilderness' OR 'Haunt[e]d Woods'
+      -- check the width of the fifth letter: m=20 e=14 t=10
+      local _, _, w, _, _, _ = event:vertexatlasdetails((event:verticesperimage() * 8) + 1)
+      if w == 10 then return create(bolt, "hauntedwoods") end
+      if w == 14 then return create(bolt, "deepwilderness") end
+      if w == 20 then return create(bolt, "darkmeyer") end
+      return nil
+    end,
+    ["\x00\x00\x01\x00\x00\x00\x01\x00\xff\xff\xff\xaa\xff\xff\xff\xaa\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xdd\xff\xff\xff\xdd\xff\xff\xff\xcc\xff\xff\xff\xcc\x00\x00\x01\x00\x00\x00\x01\x00"] = function (bolt, event)
+      -- 'g' => 'Kelda[g]rim'
+      return create(bolt, "keldagrim")
+    end,
+    ["\xff\xff\xff\xdd\xff\xff\xff\xdd\xff\xff\xff\xaa\xff\xff\xff\xaa\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xaa\xff\xff\xff\xaa\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00"] = function (bolt, event)
+      -- 'h' => 'Menap[h]os'
+      return create(bolt, "menaphos")
+    end,
+    ["\xff\xff\xff\xcc\xff\xff\xff\xcc\xff\xff\xff\x22\xff\xff\xff\x22\x00\x00\x01\x00\x00\x00\x01\x00"] = function (bolt, event)
+      -- 'i' => 'Zanar[i]s' OR 'Scann[i]ng...'
+      -- check the width of the fifth letter: r=8 n=14
+      local _, _, w, _, _, _ = event:vertexatlasdetails((event:verticesperimage() * 8) + 1)
+      if w == 8 then return create(bolt, "zanaris") end
+      return nil
+    end,
+    ["\xff\xff\xff\xdd\xff\xff\xff\xdd\xff\xff\xff\x22\xff\xff\xff\x22\x00\x00\x01\x00\x00\x00\x01\x00"] = function (bolt, event)
+      -- 'l' => 'Taver[l]ey Dungeon' or 'The Is[l]ands That Once Were Turtles'
+      -- check the width of the fifth letter: r=8 s=12
+      local _, _, w, _, _, _ = event:vertexatlasdetails((event:verticesperimage() * 8) + 1)
+      if w == 8 then return create(bolt, "taverleydungeon") end
+      if w == 12 then return create(bolt, "tortleislands") end
+      return nil
+    end,
+    ["\xff\xff\xff\xcc\xff\xff\xff\xcc\xff\xff\xff\x88\xff\xff\xff\x88\xff\xff\xff\xee\xff\xff\xff\xee\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xee\xff\xff\xff\xee\xff\xff\xff\x33\xff\xff\xff\x33\x00\x00\x01\x00\x00\x00\x01\x00"] = function (bolt, event)
+      -- 'n' => 'Freme[n]nik Isles of Jatizso and Neitiznot' OR 'Freme[n]nik Slayer Dungeons'
+      -- make sure there are at least 11 characters in the batch
+      if event:vertexcount() < event:verticesperimage() * 22 then return nil end
+      -- check the width of the eleventh letter: s=12 l=6
+      local _, _, w, _, _, _ = event:vertexatlasdetails((event:verticesperimage() * 20) + 1)
+      if w == 6 then return create(bolt, "fremslayerdungeon") end
+      if w == 12 then return create(bolt, "fremislands") end
+      return nil
+    end,
+    ["\x00\x00\x01\x00\x00\x00\x01\x00\xff\xff\xff\x66\xff\xff\xff\x66\xff\xff\xff\xee\xff\xff\xff\xee\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xee\xff\xff\xff\xee\xff\xff\xff\x66\xff\xff\xff\x66\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00"] = function (bolt, event)
+      -- 'o' => 'Falad[o]r'
+      return create(bolt, "falador")
+    end,
+    ["\xff\xff\xff\xdd\xff\xff\xff\xdd\xff\xff\xff\x55\xff\xff\xff\x55\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00"] = function (bolt, event)
+      -- 'r' => 'East o[r] West Ardougne'
+      return create(bolt, "ardougne")
+    end,
+    ["\xff\xff\xff\x44\xff\xff\xff\x44\xff\xff\xff\xee\xff\xff\xff\xee\xff\xff\xff\x77\xff\xff\xff\x77\xff\xff\xff\x11\xff\xff\xff\x11\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00"] = function (bolt, event)
+      -- 's' => 'Dorge[s]h-Kaan' OR 'The de[s]ert, east of the Elid and north of Nardah'
+      -- check the width of the third letter: r=8 e=14
+      local _, _, w, _, _, _ = event:vertexatlasdetails((event:verticesperimage() * 4) + 1)
+      if w == 8 then return create(bolt, "dorgeshkaan") end
+      if w == 14 then return create(bolt, "eastdesert") end
+      return nil
+    end,
+    ["\x00\x00\x01\x00\x00\x00\x01\x00\xff\xff\xff\xdd\xff\xff\xff\xdd\xff\xff\xff\x22\xff\xff\xff\x22\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00"] = function (bolt, event)
+      -- 't' => 'Pisca[t]oris Hunter Area'
+      return create(bolt, "piscatoris")
+    end,
+    ["\x00\x00\x01\x00\x00\x00\x01\x00\xff\xff\xff\xee\xff\xff\xff\xee\x00\x00\x01\x00\x00\x00\x01\x00\xff\xff\xff\x99\xff\xff\xff\x99\xff\xff\xff\x55\xff\xff\xff\x55\x00\x00\x01\x00\x00\x00\x01\x00"] = function (bolt, event)
+      -- 'v' => 'The ca[v]es beneath Lumbridge Swamp'
+      return create(bolt, "lumbridgeswampcaves")
+    end,
+    ["\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\xff\xff\xff\x77\xff\xff\xff\x77\xff\xff\xff\xaa\xff\xff\xff\xaa\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00"] = function (bolt, event)
+      -- 'z' => 'Khara[z]i Jungle'
+      return create(bolt, "kharazi")
+    end,
+    ["\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00"] = function (bolt, event)
+      -- apostrophe (probably - it's just a row of 4 transparent pixels) => 'Mos Le'Harmless'
+      return create(bolt, "mosleharmless")
+    end,
+  }
+
+  -- event is render2d
+  local function trycreate (bolt, event)
+    -- make sure there are at least 7 characters in the batch
+    if event:vertexcount() < event:verticesperimage() * 14 then return nil end
+
+    -- as there are two images per letter, multiplying by 0 would relate to the index of the first letter, and
+    -- in this case, multiplying by 10 relates to the index of the sixth letter, which is the one we want.
+    local ax, ay, aw, ah, _, _ = event:vertexatlasdetails((event:verticesperimage() * 10) + 1)
+    if ah < 10 then return nil end
+    local data = event:texturedata(ax, ay + 9, aw * 4)
+    local f = locationsixthlettercases[data]
+    if f == nil then return nil end
+    return f(bolt, event)
+  end
+
+  return {create = create, trycreate = trycreate}
 end}

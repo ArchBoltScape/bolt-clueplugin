@@ -357,7 +357,7 @@ local points = {
       { x = 2942, y = 872, z = 2934, floor = 0 },
       { x = 2944, y = 952, z = 2902, floor = 0 },
     },
-    range = 27,
+    range = 14,
   },
   fremislands = {
     points = {
@@ -734,7 +734,7 @@ return {get = function (name, time)
 
   local ret = {}
   for i, point in pairs(p.points) do
-    ret[i] = {x = point.x, y = point.y, z = point.z, state = 0, laststatechange = time}
+    ret[i] = {x = point.x, y = point.y, z = point.z, floor = point.floor, state = 0, laststatechange = time}
   end
   return ret, p.range
 end}
