@@ -3,6 +3,10 @@ return {get = function(bolt)
   local checkintervalmicros = 100000 -- tenth of a second
   local surfacemaybe, maybewidth, maybeheight = bolt.createsurfacefrompng("images.maybe")
   local surfacenope, nopewidth, nopeheight = bolt.createsurfacefrompng("images.nope")
+  local radians180 = math.pi
+  local radians360 = 2 * radians180
+  local radians1 = radians180 / 180.0
+  local leniency = radians1 * 5.0
 
   local function create (bolt)    
     local function onrender3d (this, event)
@@ -10,18 +14,11 @@ return {get = function(bolt)
       this.hasrecentmatrices = true
     end
 
-    local function onminimapterrain (this, event)
-      local x, y = event:position()
-      this.lastx = x
-      this.lasty = y
-      this.hasrecentposition = true
-    end
-
     local function onrenderbigicon (this, event)
       if event:modelcount() == 1 and event:modelvertexcount(1) == 93 then
         this.lastrendercompasspoint = true
         return
-      elseif this.lastrendercompasspoint and this.hasrecentposition and event:modelcount() == 1 and event:modelvertexcount(1) == 42 then
+      elseif this.lastrendercompasspoint and event:modelcount() == 1 and event:modelvertexcount(1) == 42 then
         this.arrowfound = true
         local t = bolt.time()
         if t >= this.nextchecktime then
@@ -31,18 +28,16 @@ return {get = function(bolt)
           local arrowdirection = math.atan2(y2 - y1, x2 - x1)
 
           for i, point in pairs(this.pointlist) do
-            local xdiff = (point.x + 0.5) - (this.lastx / 512.0)
-            local ydiff = (point.z + 0.5) - (this.lasty / 512.0)
+            local lastx, _, lastz = bolt.playerposition():get()
+            local xdiff = (point.x + 0.5) - (lastx / 512.0)
+            local ydiff = (point.z + 0.5) - (lastz / 512.0)
             local pointdirection = math.atan2(ydiff, xdiff)
             local pointdist = math.sqrt((xdiff * xdiff) + (ydiff * ydiff))
-            -- 0.5236 radians is around 30 degrees, and 0.02 radians is a little over 1 degree
-            if pointdist > 0.5 and math.abs(pointdirection - arrowdirection) < ((0.5236 / pointdist) + 0.02) then
-              -- todo: probably don't do this based on minimap center, it's really inaccurate
-              print(string.format("possible target at %d,%d (%.01f away)", point.x, point.z, pointdist))
+            local anglediff = math.abs(pointdirection - arrowdirection)
+            if pointdist > 0.5 and anglediff < leniency or (radians360 - anglediff) < leniency then
+              print(string.format("possible target at %d,%d (%.01f away) (angle diff is %.01f)", point.x, point.z, pointdist, anglediff * 180.0 / radians180))
             end
           end
-
-          --print(string.format("angle: %.02f", (math.pi - arrowdirection) * 180.0 / math.pi))
 
           this.nextchecktime = this.nextchecktime + checkintervalmicros
           if this.nextchecktime < t then
@@ -77,7 +72,6 @@ return {get = function(bolt)
         end
       end
 
-      this.hasrecentposition = false
       this.hasrecentmatrices = false
       this.renderviewproj = nil
       this.lastrendercompasspoint = false
@@ -92,7 +86,6 @@ return {get = function(bolt)
     return {
       pointlist = points.get(),
       nextchecktime = bolt.time(),
-      hasrecentposition = false,
       hasrecentmatrices = false,
       lastrendercompasspoint = false,
       arrowfound = false,
