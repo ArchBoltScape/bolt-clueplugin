@@ -147,14 +147,38 @@ return {get = function(bolt)
       -- this function assumes that all the tracks are populated with pieces, and that all the
       -- relationships between arrows, tracks, and pieces are correctly set in the data structure.
       local function solve (this)
+        -- there should always be multiple match spots
         if not this.firstmatch then
           this.isvalid = false
           return
         end
 
+        local trackcount = 0
         for _, track in pairs(this.tracks) do
+          trackcount = trackcount + 1
           track.solutionposition = 0 -- how many moves are necessary for this track
           track.solutiondirection = 2 -- which direction of arrow needs to be pressed that number of times
+
+          -- validate that all the tracks form a complete loop and every piece has a rune on it
+          local startpiece = track.pieces[1]
+          local piece = startpiece
+          for i = 1, track.piececount do
+            if not piece or not piece.rune or (i ~= 1 and piece.height == startpiece.height) then
+              this.isvalid = false
+              return
+            end
+            piece = piece.next[1]
+          end
+          if not piece or piece.height ~= startpiece.height then
+            this.isvalid = false
+            return
+          end
+        end
+
+        -- there needs to be at least one track, and exactly twice as many arrows as tracks
+        if trackcount == 0 or trackcount * 2 ~= this.arrowcount then
+          this.isvalid = false
+          return
         end
 
         -- find a solution that satisfies the two tracks named in firstmatch
