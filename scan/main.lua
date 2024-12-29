@@ -29,6 +29,7 @@ return {get = function(bolt)
   -- (because it's a vec2), offset from the start is 0 bytes, and stride between each attribute is 2 bytes.
   program:setattribute(0, 1, true, false, 2, 0, 2)
 
+  local meerkats = false -- todo: set this from somewhere
   local checkinvertalmicros = 100000 -- a tenth of a second
   local statechangegraceperiod = 1200000 -- two game ticks
   local zeropoint = bolt.point(0, 0, 0)
@@ -51,6 +52,9 @@ return {get = function(bolt)
 
   local function create (bolt, location)
     pointlist, scanrange = points.get(location)
+    if meerkats then
+      scanrange = scanrange + 5
+    end
     surfacenope:setalpha(0.75)
     return {
       modelfound = false,
