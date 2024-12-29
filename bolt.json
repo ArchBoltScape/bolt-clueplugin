@@ -1,5 +1,5 @@
 {
   "main": "main.lua",
-  "name": "test-plugin",
-  "description": "Basic test stuff"
+  "name": "Clue Solver",
+  "description": "Shows solutions for on-screen clue scrolls"
 }
