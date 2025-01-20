@@ -524,7 +524,7 @@ return {
       ::continue::
     end
     
-    local data = orderrecursive(input, letters)
+    local data = orderrecursive(input)
     return {
       data = data,
 

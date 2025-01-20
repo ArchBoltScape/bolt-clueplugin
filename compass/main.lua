@@ -63,7 +63,7 @@ return {get = function(bolt)
               surfacenope:drawtoscreen(0, 0, nopewidth, nopeheight, px - imgradius, py - imgradius, imgsize, imgsize)
             else
               -- normal non-eliminated point
-              scale = 0.75
+              local scale = 0.75
               local imgradius = 16 * scale
               local imgsize = 32 * scale
               surfacemaybe:drawtoscreen(0, 0, maybewidth, maybeheight, px - imgradius, py - imgradius, imgsize, imgsize)
@@ -92,7 +92,6 @@ return {get = function(bolt)
       arrowfoundpreviousframe = false,
 
       onrender3d = onrender3d,
-      onminimapterrain = onminimapterrain,
       onrenderbigicon = onrenderbigicon,
       onswapbuffers = onswapbuffers,
       valid = valid,
